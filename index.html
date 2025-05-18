@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Converter App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            background-color: #f5f5f5;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #ddd;
+        }
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        h2 {
+            margin-bottom: 15px;
+            margin-top: 20px;
+        }
+        h2:first-child {
+            margin-top: 0;
+        }
+        .converter-list {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        .converter-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+        .converter-item:hover {
+            background-color: #e9e9e9;
+        }
+        .converter-item.selected {
+            background-color: #d1e7ff;
+        }
+        .sidebar-save {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        .sidebar-save input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .sidebar-save button {
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .preset-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .preset-item:hover {
+            background-color: #e9e9e9;
+        }
+        .preset-item.selected {
+            background-color: #d1e7ff;
+        }
+        .preset-item.selected:hover {
+            background-color: #bedcff;
+        }
+        .preset-delete {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .app-controls {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .layout-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toggle-button {
+            padding: 5px 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .toggle-button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        .text-area-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            overflow: hidden;
+        }
+        .text-area-container.vertical {
+            flex-direction: column;
+        }
+        .text-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .text-container h3 {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .text-container button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .text-container button:hover {
+            background-color: #0056b3;
+        }
+        textarea {
+            flex: 1;
+            padding: 10px;
+            font-family: monospace;
+            resize: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .order-badge {
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .copy-tooltip {
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+        }
+        .config-area {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        .config-tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .config-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            margin-right: 5px;
+            border-radius: 4px 4px 0 0;
+        }
+        .config-tab:hover {
+            background-color: #f0f0f0;
+        }
+        .config-tab.active {
+            background-color: #fff;
+            border-color: #ddd;
+            margin-bottom: -1px;
+        }
+        .config-content {
+            display: none;
+        }
+        .config-content.active {
+            display: block;
+        }
+        .config-group {
+            margin-bottom: 10px;
+        }
+        .config-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .config-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .help-text {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        .help-text p {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Text Converters</h2>
+        <ul class="converter-list" id="converterList">
+            <li class="converter-item" data-converter="spreadsheet-to-postgres">
+                <span>Spreadsheet to Postgres WITH</span>
+                <span class="order-badge" style="display: none;">1</span>
+            </li>
+            <li class="converter-item" data-converter="regex-replace">
+                <span>Regex Search & Replace</span>
+                <span class="order-badge" style="display: none;">1</span>
+            </li>
+            <li class="converter-item" data-converter="sed">
+                <span>SED Text Transformer</span>
+                <span class="order-badge" style="display: none;">1</span>
+            </li>
+        </ul>
+        
+        <div class="sidebar-save">
+            <input type="text" id="presetName" placeholder="Enter preset name...">
+            <button id="savePresetButton">Save</button>
+        </div>
+        
+        <h2>Presets</h2>
+        <ul class="converter-list" id="presetsList">
+            <!-- Presets will be added here dynamically -->
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <div class="app-controls">
+            <div class="layout-toggle">
+                <span>Layout:</span>
+                <button id="horizontalLayout" class="toggle-button">Horizontal</button>
+                <button id="verticalLayout" class="toggle-button active">Vertical</button>
+            </div>
+        </div>
+        
+        <div class="text-area-container vertical">
+            <div class="text-container">
+                <h3>Input</h3>
+                <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+            </div>
+            <div class="text-container">
+                <h3>
+                    Output
+                    <button id="copyButton">Copy to Clipboard</button>
+                </h3>
+                <textarea id="outputText" readonly></textarea>
+                <div class="copy-tooltip" id="copyTooltip">Copied!</div>
+            </div>
+        </div>
+        
+        <div class="config-area" id="configArea">
+            <div class="config-tabs" id="configTabs">
+                <div class="config-tab" data-config="regex">Regex Search & Replace</div>
+                <div class="config-tab" data-config="sed">SED Text Transformer</div>
+            </div>
+            
+            <div class="config-content" id="regexConfig">
+                <div class="config-group">
+                    <label for="searchPattern">Search Pattern:</label>
+                    <input type="text" id="searchPattern" placeholder="Regular expression...">
+                </div>
+                <div class="config-group">
+                    <label for="replacePattern">Replacement:</label>
+                    <input type="text" id="replacePattern" placeholder="Replacement text...">
+                </div>
+                <div class="config-group">
+                    <label for="regexFlags">Flags:</label>
+                    <input type="text" id="regexFlags" placeholder="g, i, m, etc." value="g">
+                </div>
+            </div>
+            
+            <div class="config-content" id="sedConfig">
+                <div class="config-group">
+                    <label for="sedExpression">SED Expression:</label>
+                    <input type="text" id="sedExpression" placeholder="s/pattern/replacement/flags">
+                </div>
+                <div class="config-group">
+                    <label for="sedOptions">Options:</label>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="sedGlobalReplace" checked>
+                            Global replace (g)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="sedCaseInsensitive">
+                            Case insensitive (i)
+                        </label>
+                        <label>
+                            <input type="checkbox" id="sedMultiline">
+                            Multiline (m)
+                        </label>
+                    </div>
+                </div>
+                <div class="help-text">
+                    <p>Supports capture groups (\1, \2, etc) and case modifiers (\U, \L, \E)</p>
+                    <p>Examples: s/hello/world/, s/hello/\Uworld/, s/(\\w+)/(\\1)/</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // State management
+            const state = {
+                selectedConverters: [],
+                selectedPresets: [],
+                inputText: '',
+                regexConfig: {
+                    search: '',
+                    replace: '',
+                    flags: 'g'
+                },
+                sedConfig: {
+                    expression: '',
+                    globalReplace: true,
+                    caseInsensitive: false,
+                    multiline: false
+                },
+                layout: 'vertical',
+                activeConfigTab: 'regex'
+            };
+
+            // DOM elements
+            const converterList = document.getElementById('converterList');
+            const converterItems = document.querySelectorAll('.converter-item');
+            const inputTextArea = document.getElementById('inputText');
+            const outputTextArea = document.getElementById('outputText');
+            const configArea = document.getElementById('configArea');
+            const configTabs = document.getElementById('configTabs');
+            const configTabItems = document.querySelectorAll('.config-tab');
+            const regexConfig = document.getElementById('regexConfig');
+            const sedConfig = document.getElementById('sedConfig');
+            const searchPattern = document.getElementById('searchPattern');
+            const replacePattern = document.getElementById('replacePattern');
+            const regexFlags = document.getElementById('regexFlags');
+            const sedExpression = document.getElementById('sedExpression');
+            const sedGlobalReplace = document.getElementById('sedGlobalReplace');
+            const sedCaseInsensitive = document.getElementById('sedCaseInsensitive');
+            const sedMultiline = document.getElementById('sedMultiline');
+            const textAreaContainer = document.querySelector('.text-area-container');
+            const horizontalLayoutBtn = document.getElementById('horizontalLayout');
+            const verticalLayoutBtn = document.getElementById('verticalLayout');
+            const copyButton = document.getElementById('copyButton');
+            const copyTooltip = document.getElementById('copyTooltip');
+            const presetsList = document.getElementById('presetsList');
+            const presetNameInput = document.getElementById('presetName');
+            const savePresetButton = document.getElementById('savePresetButton');
+            
+            // Functions for tab handling
+            function setActiveTab(tabName) {
+                state.activeConfigTab = tabName;
+                
+                // Update tab UI
+                configTabItems.forEach(tab => {
+                    if (tab.getAttribute('data-config') === tabName) {
+                        tab.classList.add('active');
+                    } else {
+                        tab.classList.remove('active');
+                    }
+                });
+                
+                // Update content visibility
+                document.querySelectorAll('.config-content').forEach(content => {
+                    if (content.id === tabName + 'Config') {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+            }
+
+            // Layout toggle
+            horizontalLayoutBtn.addEventListener('click', () => {
+                state.layout = 'horizontal';
+                textAreaContainer.classList.remove('vertical');
+                horizontalLayoutBtn.classList.add('active');
+                verticalLayoutBtn.classList.remove('active');
+            });
+
+            verticalLayoutBtn.addEventListener('click', () => {
+                state.layout = 'vertical';
+                textAreaContainer.classList.add('vertical');
+                verticalLayoutBtn.classList.add('active');
+                horizontalLayoutBtn.classList.remove('active');
+            });
+
+            // Copy to clipboard
+            copyButton.addEventListener('click', () => {
+                outputTextArea.select();
+                document.execCommand('copy');
+                
+                // Show tooltip
+                copyTooltip.style.display = 'block';
+                setTimeout(() => {
+                    copyTooltip.style.display = 'none';
+                }, 2000);
+            });
+
+            // Presets management
+            function loadPresets() {
+                const presets = JSON.parse(localStorage.getItem('textConverterPresets') || '[]');
+                presetsList.innerHTML = '';
+                
+                if (presets.length === 0) {
+                    const emptyItem = document.createElement('li');
+                    emptyItem.className = 'preset-item';
+                    emptyItem.textContent = 'No presets saved';
+                    presetsList.appendChild(emptyItem);
+                    return;
+                }
+                
+                presets.forEach(preset => {
+                    const presetItem = document.createElement('li');
+                    presetItem.className = 'preset-item';
+                    presetItem.dataset.preset = preset.name;
+                    
+                    // Create span for preset name
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = preset.name;
+                    
+                    // Create delete button
+                    const deleteButton = document.createElement('button');
+                    deleteButton.className = 'preset-delete';
+                    deleteButton.textContent = 'Delete';
+                    
+                    presetItem.appendChild(nameSpan);
+                    presetItem.appendChild(deleteButton);
+                    
+                    // Event listener for preset selection
+                    presetItem.addEventListener('click', (e) => {
+                        // Only handle clicks on the preset item or name span, not on the delete button
+                        if (e.target !== deleteButton) {
+                            togglePreset(preset.name);
+                        }
+                    });
+                    
+                    // Event listener for delete button
+                    deleteButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent triggering the presetItem click
+                        deletePreset(preset.name);
+                    });
+                    
+                    presetsList.appendChild(presetItem);
+                });
+            }
+
+            function togglePreset(name) {
+                const index = state.selectedPresets.indexOf(name);
+                
+                if (index === -1) {
+                    // Add preset
+                    state.selectedPresets.push(name);
+                    applyPreset(name);
+                } else {
+                    // Remove preset
+                    state.selectedPresets.splice(index, 1);
+                    // Since we're removing a preset, we need to reapply all remaining presets
+                    removeAllConverters();
+                    state.selectedPresets.forEach(presetName => {
+                        applyPreset(presetName);
+                    });
+                }
+                
+                updatePresetsUI();
+                updateOutput();
+            }
+
+            function removeAllConverters() {
+                state.selectedConverters = [];
+                updateConverterUI();
+            }
+
+            function applyPreset(name) {
+                const presets = JSON.parse(localStorage.getItem('textConverterPresets') || '[]');
+                const preset = presets.find(p => p.name === name);
+                
+                if (preset) {
+                    // For each converter in the preset, add it if it's not already in the selected converters
+                    preset.selectedConverters.forEach(converter => {
+                        if (!state.selectedConverters.includes(converter)) {
+                            state.selectedConverters.push(converter);
+                        }
+                    });
+                    
+                    // If the preset includes regex config, apply it
+                    if (preset.regexConfig) {
+                        state.regexConfig = { ...preset.regexConfig };
+                        searchPattern.value = state.regexConfig.search;
+                        replacePattern.value = state.regexConfig.replace;
+                        regexFlags.value = state.regexConfig.flags;
+                    }
+                    
+                    // If the preset includes sed config, apply it
+                    if (preset.sedConfig) {
+                        state.sedConfig = { ...preset.sedConfig };
+                        sedExpression.value = state.sedConfig.expression;
+                        sedGlobalReplace.checked = state.sedConfig.globalReplace;
+                        sedCaseInsensitive.checked = state.sedConfig.caseInsensitive;
+                        sedMultiline.checked = state.sedConfig.multiline;
+                    }
+                    
+                    updateConverterUI();
+                }
+            }
+
+            function savePreset() {
+                const name = presetNameInput.value.trim();
+                if (!name) {
+                    alert('Please enter a preset name');
+                    return;
+                }
+                
+                const preset = {
+                    name,
+                    selectedConverters: [...state.selectedConverters],
+                    regexConfig: { ...state.regexConfig },
+                    sedConfig: { ...state.sedConfig }
+                };
+                
+                const presets = JSON.parse(localStorage.getItem('textConverterPresets') || '[]');
+                
+                // Check if a preset with this name already exists
+                const existingIndex = presets.findIndex(p => p.name === name);
+                if (existingIndex !== -1) {
+                    if (confirm(`A preset named "${name}" already exists. Do you want to replace it?`)) {
+                        presets[existingIndex] = preset;
+                    } else {
+                        return;
+                    }
+                } else {
+                    presets.push(preset);
+                }
+                
+                localStorage.setItem('textConverterPresets', JSON.stringify(presets));
+                presetNameInput.value = '';
+                loadPresets();
+            }
+
+            function updatePresetsUI() {
+                const presetItems = presetsList.querySelectorAll('.preset-item');
+                presetItems.forEach(item => {
+                    const presetName = item.dataset.preset;
+                    if (!presetName) return; // Skip the "No presets saved" item
+                    
+                    const index = state.selectedPresets.indexOf(presetName);
+                    
+                    if (index !== -1) {
+                        item.classList.add('selected');
+                    } else {
+                        item.classList.remove('selected');
+                    }
+                });
+            }
+
+            function deletePreset(name) {
+                if (!confirm(`Are you sure you want to delete the preset "${name}"?`)) {
+                    return;
+                }
+                
+                const presets = JSON.parse(localStorage.getItem('textConverterPresets') || '[]');
+                const updatedPresets = presets.filter(p => p.name !== name);
+                localStorage.setItem('textConverterPresets', JSON.stringify(updatedPresets));
+                
+                // If the preset was selected, remove it from the selected presets
+                const presetIndex = state.selectedPresets.indexOf(name);
+                if (presetIndex !== -1) {
+                    state.selectedPresets.splice(presetIndex, 1);
+                    
+                    // We need to reapply all remaining presets
+                    removeAllConverters();
+                    state.selectedPresets.forEach(presetName => {
+                        applyPreset(presetName);
+                    });
+                    
+                    updateOutput();
+                }
+                
+                loadPresets();
+                updatePresetsUI();
+            }
+
+            savePresetButton.addEventListener('click', savePreset);
+
+            // Converter functions
+            const converters = {
+                'spreadsheet-to-postgres': function(text) {
+                    if (!text.trim()) return '';
+                    
+                    // Split the text into lines
+                    const lines = text.trim().split('\n');
+                    if (lines.length < 2) return text;
+                    
+                    // Get the header line and extract column names
+                    const headerLine = lines[0];
+                    const columns = headerLine.split('\t').map(col => {
+                        // Initial trim to remove leading/trailing whitespace
+                        let cleaned = col.trim();
+                        // Remove special symbols
+                        cleaned = cleaned.replace(/[^\w\s]/g, '');
+                        // Trim again to handle any whitespace introduced by removing special symbols
+                        cleaned = cleaned.trim();
+                        // Replace spaces with underscores
+                        cleaned = cleaned.replace(/\s+/g, '_');
+                        return cleaned;
+                    });
+                    
+                    // Generate the WITH clause header
+                    let result = `WITH csv_data(${columns.join(', ')}) AS (\n  VALUES\n`;
+                    
+                    // Process data rows
+                    for (let i = 1; i < lines.length; i++) {
+                        const row = lines[i].split('\t').map(cell => {
+                            // Remove leading/trailing whitespace
+                            const trimmedCell = cell.trim();
+                            
+                            // Check if it's a number
+                            if (/^[\d,.]+$/.test(trimmedCell)) {
+                                // Remove commas from numbers
+                                return trimmedCell.replace(/,/g, '');
+                            } else {
+                                // Escape any single quotes in the text by doubling them
+                                const escapedText = trimmedCell.replace(/'/g, "''");
+                                // Surround text with single quotes
+                                return `'${escapedText}'`;
+                            }
+                        });
+                        
+                        result += `    (${row.join(', ')})`;
+                        if (i < lines.length - 1) {
+                            result += ',\n';
+                        } else {
+                            result += '\n';
+                        }
+                    }
+                    
+                    result += ')\n';
+                    return result;
+                },
+                'regex-replace': function(text) {
+                    if (!text.trim() || !state.regexConfig.search) return text;
+                    
+                    try {
+                        const regex = new RegExp(state.regexConfig.search, state.regexConfig.flags);
+                        return text.replace(regex, state.regexConfig.replace);
+                    } catch (error) {
+                        console.error('Invalid regex:', error);
+                        return text;
+                    }
+                },
+                'sed': function(text) {
+                    if (!text.trim() || !state.sedConfig.expression) return text;
+                    
+                    // Parse the SED expression
+                    let sedExpression = state.sedConfig.expression;
+                    
+                    // If it doesn't start with 's/', assume it's just a pattern and replacement
+                    if (!sedExpression.startsWith('s/')) {
+                        sedExpression = 's/' + sedExpression;
+                    }
+                    
+                    // Make sure it has the right format
+                    const sedRegex = /^s\/(.+?)\/(.*)\/([gim]*)$/;
+                    const match = sedExpression.match(sedRegex);
+                    
+                    if (!match) {
+                        // Try to handle the case without trailing slash
+                        const simpleRegex = /^s\/(.+?)\/(.*)$/;
+                        const simpleMatch = sedExpression.match(simpleRegex);
+                        if (!simpleMatch) {
+                            console.error('Invalid SED expression:', sedExpression);
+                            return text;
+                        }
+                        
+                        try {
+                            let flags = '';
+                            if (state.sedConfig.globalReplace) flags += 'g';
+                            if (state.sedConfig.caseInsensitive) flags += 'i';
+                            if (state.sedConfig.multiline) flags += 'm';
+                            
+                            const pattern = simpleMatch[1];
+                            let replacement = simpleMatch[2];
+                            
+                            // Process the replacement string to handle SED-specific features
+                            replacement = processSedReplacement(replacement);
+                            
+                            const regex = new RegExp(pattern, flags);
+                            return text.replace(regex, replacement);
+                        } catch (error) {
+                            console.error('Error applying SED expression:', error);
+                            return text;
+                        }
+                    }
+                    
+                    try {
+                        const pattern = match[1];
+                        let replacement = match[2];
+                        let flags = match[3];
+                        
+                        // Add flags from checkboxes if not already in the expression
+                        if (state.sedConfig.globalReplace && !flags.includes('g')) flags += 'g';
+                        if (state.sedConfig.caseInsensitive && !flags.includes('i')) flags += 'i';
+                        if (state.sedConfig.multiline && !flags.includes('m')) flags += 'm';
+                        
+                        // Process the replacement string to handle SED-specific features
+                        replacement = processSedReplacement(replacement);
+                        
+                        const regex = new RegExp(pattern, flags);
+                        return text.replace(regex, replacement);
+                    } catch (error) {
+                        console.error('Error applying SED expression:', error);
+                        return text;
+                    }
+                }
+            };
+            
+            // Function to process SED replacement string with case modifiers
+            function processSedReplacement(replacement) {
+                // Process \U (uppercase until \E)
+                let result = '';
+                let upperCase = false;
+                let lowerCase = false;
+                
+                for (let i = 0; i < replacement.length; i++) {
+                    if (replacement[i] === '\\' && i + 1 < replacement.length) {
+                        const nextChar = replacement[i + 1];
+                        
+                        if (nextChar === 'U') {
+                            upperCase = true;
+                            lowerCase = false;
+                            i++; // Skip the next character
+                        } else if (nextChar === 'L') {
+                            lowerCase = true;
+                            upperCase = false;
+                            i++; // Skip the next character
+                        } else if (nextChar === 'E') {
+                            upperCase = false;
+                            lowerCase = false;
+                            i++; // Skip the next character
+                        } else if (nextChar.match(/\d/)) {
+                            // This is a capture group reference (\1, \2, etc.)
+                            result += '\\' + nextChar;
+                            i++; // Skip the next character
+                        } else {
+                            // Other escaped character
+                            result += '\\' + nextChar;
+                            i++; // Skip the next character
+                        }
+                    } else {
+                        if (upperCase) {
+                            result += replacement[i].toUpperCase();
+                        } else if (lowerCase) {
+                            result += replacement[i].toLowerCase();
+                        } else {
+                            result += replacement[i];
+                        }
+                    }
+                }
+                
+                // Create a function to handle the replacement with case modifiers
+                // This is necessary because we need to apply the case modifiers to the capture groups after they're resolved
+                return function(match, ...groups) {
+                    const offset = groups.pop();
+                    const string = groups.pop();
+                    
+                    // Replace \1, \2, etc. with their corresponding capture groups
+                    return result.replace(/\\(\d+)/g, (_, index) => {
+                        const groupIndex = parseInt(index, 10) - 1;
+                        if (groupIndex >= 0 && groupIndex < groups.length) {
+                            return groups[groupIndex] || '';
+                        }
+                        return '';
+                    });
+                };
+            }
+
+            // Update the output text based on selected converters
+            function updateOutput() {
+                let processedText = state.inputText;
+                
+                // Apply converters in order
+                state.selectedConverters.forEach(converter => {
+                    processedText = converters[converter](processedText);
+                });
+                
+                outputTextArea.value = processedText;
+            }
+
+            // Update the converter selection UI
+            function updateConverterUI() {
+                converterItems.forEach(item => {
+                    const converter = item.getAttribute('data-converter');
+                    const badge = item.querySelector('.order-badge');
+                    const index = state.selectedConverters.indexOf(converter);
+                    
+                    if (index !== -1) {
+                        item.classList.add('selected');
+                        badge.textContent = index + 1;
+                        badge.style.display = 'flex';
+                    } else {
+                        item.classList.remove('selected');
+                        badge.style.display = 'none';
+                    }
+                });
+                
+                // Determine which converters need configuration
+                const needsRegexConfig = state.selectedConverters.includes('regex-replace');
+                const needsSedConfig = state.selectedConverters.includes('sed');
+                
+                // Show or hide the entire config area
+                if (needsRegexConfig || needsSedConfig) {
+                    configArea.style.display = 'block';
+                    
+                    // Update tab visibility
+                    const regexTab = document.querySelector('.config-tab[data-config="regex"]');
+                    const sedTab = document.querySelector('.config-tab[data-config="sed"]');
+                    
+                    if (regexTab) regexTab.style.display = needsRegexConfig ? 'block' : 'none';
+                    if (sedTab) sedTab.style.display = needsSedConfig ? 'block' : 'none';
+                    
+                    // If current active tab is not visible, switch to a visible one
+                    if ((state.activeConfigTab === 'regex' && !needsRegexConfig) || 
+                        (state.activeConfigTab === 'sed' && !needsSedConfig)) {
+                        if (needsRegexConfig) {
+                            setActiveTab('regex');
+                        } else if (needsSedConfig) {
+                            setActiveTab('sed');
+                        }
+                    }
+                } else {
+                    configArea.style.display = 'none';
+                }
+            }
+
+            // Event listeners
+            converterItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    const converter = item.getAttribute('data-converter');
+                    const index = state.selectedConverters.indexOf(converter);
+                    
+                    if (index === -1) {
+                        // Add converter
+                        state.selectedConverters.push(converter);
+                    } else {
+                        // Remove converter
+                        state.selectedConverters.splice(index, 1);
+                    }
+                    
+                    updateConverterUI();
+                    updateOutput();
+                });
+            });
+
+            inputTextArea.addEventListener('input', (e) => {
+                state.inputText = e.target.value;
+                updateOutput();
+            });
+
+            searchPattern.addEventListener('input', (e) => {
+                state.regexConfig.search = e.target.value;
+                updateOutput();
+            });
+
+            replacePattern.addEventListener('input', (e) => {
+                state.regexConfig.replace = e.target.value;
+                updateOutput();
+            });
+
+            regexFlags.addEventListener('input', (e) => {
+                state.regexConfig.flags = e.target.value;
+                updateOutput();
+            });
+            
+            // Add SED event listeners
+            sedExpression.addEventListener('input', (e) => {
+                state.sedConfig.expression = e.target.value;
+                updateOutput();
+            });
+            
+            sedGlobalReplace.addEventListener('change', (e) => {
+                state.sedConfig.globalReplace = e.target.checked;
+                updateOutput();
+            });
+            
+            sedCaseInsensitive.addEventListener('change', (e) => {
+                state.sedConfig.caseInsensitive = e.target.checked;
+                updateOutput();
+            });
+            
+            sedMultiline.addEventListener('change', (e) => {
+                state.sedConfig.multiline = e.target.checked;
+                updateOutput();
+            });
+            
+            // Initialize tab event listeners
+            configTabItems.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    setActiveTab(tab.getAttribute('data-config'));
+                });
+            });
+
+            // Initialize UI
+            setActiveTab(state.activeConfigTab);
+            updateConverterUI();
+            loadPresets();
+        });
+    </script>
+</body>
+</html>
